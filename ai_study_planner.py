@@ -1,296 +1,401 @@
-# ==========================================
-# AI STUDY PLANNER
-# Python Mini Project
-# ==========================================
+import streamlit as st
+import pandas as pd
+import random
+from datetime import datetime, timedelta
 
-tasks = []
+# ---------------- PAGE CONFIG ----------------
 
-# ------------------------------------------
-# Function to add task
-# ------------------------------------------
+st.set_page_config(
+    page_title="AI Study Planner",
+    page_icon="📚",
+    layout="wide"
+)
 
-def add_task():
+# ---------------- CUSTOM CSS ----------------
 
-    subject = input("Enter Subject: ")
-    topic = input("Enter Topic: ")
-    hours = int(input("Enter Hours Required: "))
+st.markdown("""
+<style>
 
-    print("Difficulty Levels:")
-    print("1. Easy")
-    print("2. Medium")
-    print("3. Hard")
+.stApp {
+    background-color: #f7f7f5;
+}
 
-    choice = int(input("Choose Difficulty: "))
+.main-title {
+    font-size: 42px;
+    font-weight: bold;
+    text-align: center;
+    color: #222222;
+}
 
-    if choice == 1:
-        difficulty = "Easy"
-        priority = hours * 1
+.subtitle {
+    text-align: center;
+    color: gray;
+    margin-bottom: 25px;
+}
 
-    elif choice == 2:
-        difficulty = "Medium"
-        priority = hours * 2
+.section-title {
+    font-size: 24px;
+    font-weight: bold;
+    color: #222222;
+    margin-top: 20px;
+}
+
+</style>
+""", unsafe_allow_html=True)
+
+# ---------------- HEADER ----------------
+
+st.markdown(
+    "<div class='main-title'>📚 AI Study Planner</div>",
+    unsafe_allow_html=True
+)
+
+st.markdown(
+    "<div class='subtitle'>Plan smarter, study better and stay consistent ✨</div>",
+    unsafe_allow_html=True
+)
+
+# ---------------- SESSION STATE ----------------
+
+if "tasks" not in st.session_state:
+    st.session_state.tasks = []
+
+# ---------------- MOTIVATIONAL QUOTES ----------------
+
+quotes = [
+    "Small progress is still progress 📈",
+    "Study now, stress less later 😎",
+    "Every chapter completed is a win 🏆",
+    "Consistency beats intensity 💪",
+    "One task at a time leads to big results 🎯"
+]
+
+st.info(random.choice(quotes))
+
+# ---------------- PRIORITY FUNCTION ----------------
+
+def priority_score(hours, difficulty):
+
+    if difficulty == "Easy":
+        return hours * 1
+
+    elif difficulty == "Medium":
+        return hours * 1.5
 
     else:
-        difficulty = "Hard"
-        priority = hours * 3
+        return hours * 2
 
-    task = [subject, topic, hours, difficulty, priority, False]
+# ---------------- ADD TASK ----------------
 
-    tasks.append(task)
+st.markdown(
+    "<div class='section-title'>➕ Add Study Task</div>",
+    unsafe_allow_html=True
+)
 
-    print("Task Added Successfully")
+with st.form("task_form"):
 
+    col1, col2 = st.columns(2)
 
-# ------------------------------------------
-# Function to view tasks
-# ------------------------------------------
+    with col1:
+        subject = st.text_input("Subject")
 
-def view_tasks():
+    with col2:
+        topic = st.text_input("Topic")
 
-    if len(tasks) == 0:
-        print("No Tasks Added")
-        return
+    col3, col4 = st.columns(2)
 
-    print("\n------ TASK LIST ------")
+    with col3:
+        hours = st.slider("Hours Required", 1, 8, 2)
 
-    for i in range(len(tasks)):
-
-        if tasks[i][5] == True:
-            status = "Completed"
-        else:
-            status = "Pending"
-
-        print(
-            i + 1,
-            "| Subject:", tasks[i][0],
-            "| Topic:", tasks[i][1],
-            "| Hours:", tasks[i][2],
-            "| Difficulty:", tasks[i][3],
-            "|", status
+    with col4:
+        difficulty = st.selectbox(
+            "Difficulty",
+            ["Easy", "Medium", "Hard"]
         )
 
+    submit = st.form_submit_button("Add Task")
 
-# ------------------------------------------
-# Mark task complete
-# ------------------------------------------
+if submit:
 
-def complete_task():
+    if subject.strip() and topic.strip():
 
-    view_tasks()
+        score = priority_score(hours, difficulty)
 
-    if len(tasks) == 0:
-        return
+        st.session_state.tasks.append({
+            "Subject": subject,
+            "Topic": topic,
+            "Hours": hours,
+            "Difficulty": difficulty,
+            "Priority": score
+        })
 
-    task_no = int(input("Enter Task Number: "))
-
-    if task_no >= 1 and task_no <= len(tasks):
-
-        tasks[task_no - 1][5] = True
-
-        print("Task Marked Completed")
+        st.success("Task Added Successfully ✅")
 
     else:
-        print("Invalid Task Number")
+        st.warning("Please enter Subject and Topic")
 
+# ---------------- TASK TRACKER ----------------
 
-# ------------------------------------------
-# Dashboard
-# ------------------------------------------
+st.markdown(
+    "<div class='section-title'>📌 Task Tracker</div>",
+    unsafe_allow_html=True
+)
 
-def dashboard():
+completed_tasks = 0
 
-    total_tasks = len(tasks)
+if st.session_state.tasks:
 
-    completed = 0
-    total_hours = 0
+    for i, task in enumerate(st.session_state.tasks):
 
-    for task in tasks:
+        checked = st.checkbox(
+            f"{task['Subject']} - {task['Topic']}",
+            key=f"task_{i}"
+        )
 
-        total_hours = total_hours + task[2]
+        if checked:
+            completed_tasks += 1
 
-        if task[5] == True:
-            completed = completed + 1
+else:
+    st.info("No tasks added yet.")
 
-    print("\n------ DASHBOARD ------")
-    print("Total Tasks:", total_tasks)
-    print("Completed Tasks:", completed)
-    print("Hours Planned:", total_hours)
+# ---------------- DASHBOARD ----------------
 
-    if total_tasks > 0:
+total_tasks = len(st.session_state.tasks)
 
-        progress = (completed / total_tasks) * 100
+total_hours = sum(
+    task["Hours"]
+    for task in st.session_state.tasks
+)
 
-        print("Progress:", round(progress, 2), "%")
+st.markdown(
+    "<div class='section-title'>📊 Dashboard</div>",
+    unsafe_allow_html=True
+)
 
+col1, col2, col3 = st.columns(3)
 
-# ------------------------------------------
-# AI Recommendation
-# ------------------------------------------
+with col1:
+    st.metric("Tasks", total_tasks)
 
-def recommendation():
+with col2:
+    st.metric("Completed", completed_tasks)
 
-    hard_tasks = 0
+with col3:
+    st.metric("Hours Planned", total_hours)
 
-    for task in tasks:
+# ---------------- PROGRESS BAR ----------------
 
-        if task[3] == "Hard":
-            hard_tasks = hard_tasks + 1
+if total_tasks > 0:
 
-    print("\n------ AI RECOMMENDATION ------")
+    progress = completed_tasks / total_tasks
 
-    if hard_tasks >= 3:
+    st.progress(progress)
 
-        print("You have many difficult tasks.")
-        print("Take short breaks while studying.")
-
-    elif hard_tasks == 0 and len(tasks) > 0:
-
-        print("Your workload looks manageable today.")
-
-    else:
-
-        print("Stay consistent and complete tasks one by one.")
-
-
-# ------------------------------------------
-# Timetable Generator
-# ------------------------------------------
-
-def timetable():
-
-    if len(tasks) == 0:
-
-        print("No Tasks Available")
-        return
-
-    print("\n------ STUDY TIMETABLE ------")
-
-    sorted_tasks = sorted(
-        tasks,
-        key=lambda x: x[4],
-        reverse=True
+    st.write(
+        f"Progress: {completed_tasks}/{total_tasks} Tasks Completed"
     )
 
-    slot = 1
+# ---------------- TASK TABLE ----------------
 
-    for task in sorted_tasks:
+if st.session_state.tasks:
 
-        print(
-            "Slot", slot,
-            "->",
-            task[0],
-            "-",
-            task[1],
-            "(",
-            task[2],
-            "Hours )"
+    table_data = []
+
+    for i, task in enumerate(st.session_state.tasks):
+
+        table_data.append({
+            "Subject": task["Subject"],
+            "Topic": task["Topic"],
+            "Hours": task["Hours"],
+            "Difficulty": task["Difficulty"],
+            "Priority": task["Priority"],
+            "Completed": st.session_state.get(
+                f"task_{i}",
+                False
+            )
+        })
+
+    st.dataframe(
+        pd.DataFrame(table_data),
+        use_container_width=True,
+        hide_index=True
+    )
+
+# ---------------- AI RECOMMENDATION ----------------
+
+st.markdown(
+    "<div class='section-title'>🤖 AI Recommendation</div>",
+    unsafe_allow_html=True
+)
+
+hard_tasks = [
+    task
+    for task in st.session_state.tasks
+    if task["Difficulty"] == "Hard"
+]
+
+if len(hard_tasks) >= 3:
+
+    st.warning(
+        "You have several difficult tasks. Take short breaks between study sessions."
+    )
+
+elif len(hard_tasks) == 0 and total_tasks > 0:
+
+    st.success(
+        "Your workload looks manageable today!"
+    )
+
+# ---------------- SMART TIMETABLE ----------------
+
+st.markdown(
+    "<div class='section-title'>🧠 Smart Study Timetable</div>",
+    unsafe_allow_html=True
+)
+
+if st.button("Generate Timetable"):
+
+    if st.session_state.tasks:
+
+        sorted_tasks = sorted(
+            st.session_state.tasks,
+            key=lambda x: x["Priority"],
+            reverse=True
         )
 
-        slot = slot + 1
+        current = datetime.now().replace(
+            minute=0,
+            second=0,
+            microsecond=0
+        )
+
+        plan = []
+
+        for task in sorted_tasks:
+
+            end = current + timedelta(
+                hours=task["Hours"]
+            )
+
+            plan.append({
+                "Time Slot":
+                f"{current.strftime('%I:%M %p')} - {end.strftime('%I:%M %p')}",
+                "Subject": task["Subject"],
+                "Topic": task["Topic"]
+            })
+
+            current = end
+
+        st.success("Timetable Generated 🎯")
+
+        st.table(
+            pd.DataFrame(plan)
+        )
+
+    else:
+        st.warning(
+            "Please add tasks first."
+        )
+
+# ---------------- ATTENDANCE CALCULATOR ----------------
 
 
-# ------------------------------------------
-# Attendance Calculator
-# ------------------------------------------
+st.markdown(
+    "<div class='section-title'>📅 Attendance Calculator</div>",
+    unsafe_allow_html=True
+)
 
-def attendance():
+subjects = [
+    "Mathematics",
+    "Python",
+    "Civil",
+    "BEE",
+    "CAD",
+    "English"
+]
 
-    print("\n------ ATTENDANCE CALCULATOR ------")
+attendance_data = []
 
-    attended = int(input("Classes Attended: "))
-    total = int(input("Total Classes: "))
+for subject in subjects:
+
+    st.subheader(subject)
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        attended = st.number_input(
+            f"{subject} - Classes Attended",
+            min_value=0,
+            value=0,
+            key=f"{subject}_attended"
+        )
+
+    with col2:
+        total = st.number_input(
+            f"{subject} - Total Classes",
+            min_value=1,
+            value=1,
+            key=f"{subject}_total"
+        )
 
     percentage = (attended / total) * 100
 
-    print("Attendance =", round(percentage, 2), "%")
+    attendance_data.append({
+        "Subject": subject,
+        "Attendance %": round(percentage, 2)
+    })
 
     if percentage >= 75:
 
-        print("Attendance Safe")
+        st.success(
+            f"Attendance: {percentage:.2f}% ✅ Safe"
+        )
 
     else:
+
+        required_classes = 0
 
         future_attended = attended
         future_total = total
 
-        required = 0
-
         while (future_attended / future_total) * 100 < 75:
+            future_attended += 1
+            future_total += 1
+            required_classes += 1
 
-            future_attended = future_attended + 1
-            future_total = future_total + 1
-
-            required = required + 1
-
-        print("Attendance Low")
-        print(
-            "Attend",
-            required,
-            "consecutive classes to reach 75%"
+        st.error(
+            f"Attendance: {percentage:.2f}% ⚠️"
         )
 
+        st.warning(
+            f"You must attend {required_classes} consecutive classes to reach 75% attendance."
+        )
 
-# ------------------------------------------
-# Motivational Quote
-# ------------------------------------------
+st.markdown("### Attendance Summary")
 
-def quote():
+st.dataframe(
+    pd.DataFrame(attendance_data),
+    use_container_width=True,
+    hide_index=True
+)
 
-    print("\nQuote Of The Day")
-    print("Small Progress Is Still Progress")
+# ---------------- RESET BUTTON ----------------
 
+if st.button("Reset All Tasks"):
 
-# ------------------------------------------
-# Main Program
-# ------------------------------------------
+    st.session_state.tasks = []
 
-while True:
+    keys_to_delete = [
+        key for key in st.session_state.keys()
+        if key.startswith("task_")
+    ]
 
-    print("\n================================")
-    print("        AI STUDY PLANNER")
-    print("================================")
+    for key in keys_to_delete:
+        del st.session_state[key]
 
-    print("1. Add Study Task")
-    print("2. View Tasks")
-    print("3. Mark Task Complete")
-    print("4. Dashboard")
-    print("5. AI Recommendation")
-    print("6. Generate Timetable")
-    print("7. Attendance Calculator")
-    print("8. Motivational Quote")
-    print("9. Exit")
+    #st.rerun()
 
-    choice = int(input("Enter Your Choice: "))
+# ---------------- FOOTER ----------------
 
-    if choice == 1:
-        add_task()
-
-    elif choice == 2:
-        view_tasks()
-
-    elif choice == 3:
-        complete_task()
-
-    elif choice == 4:
-        dashboard()
-
-    elif choice == 5:
-        recommendation()
-
-    elif choice == 6:
-        timetable()
-
-    elif choice == 7:
-        attendance()
-
-    elif choice == 8:
-        quote()
-
-    elif choice == 9:
-
-        print("Thank You For Using AI Study Planner")
-        break
-
-    else:
-
-        print("Invalid Choice")
+st.markdown("---")
+st.caption("Python Mini Project | AI Study Planner 📚")
